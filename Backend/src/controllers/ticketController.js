@@ -137,7 +137,63 @@ async function assignTicket(req, res) {
     }
 }
 
+async function modifyStatus(req,res) {
+
+    try{
+        const {ticketId} = req.params;
+        const {status} = req.body;
+
+        const { id: userId, role } = req.user;   //  authMiddleware se aaya hua data
+
+        if(!status){
+            return res.status(400).json({
+                message : "Status is required in the body",
+                success : false
+            })
+        }
+
+        if(role !== "AGENT" && role !== "ADMIN"){
+            return res.status(403).json({
+                message : "Only Admins and Agent can modify the ticket status"
+            })
+        }
+
+        const ticket = await ticketModel.findById(ticketId);
+        if(!ticket){
+            return res.status(404).json({
+                message : "Ticket not found",
+                success : false
+            })
+        }
+
+        if(role === "AGENT"){
+            if(!ticket.assignedTo || ticket.assignedTo.toString() !== userId){
+                return res.status(403).json({
+                    message : "Only assigned agent can modify the status of ticket",
+                    success : false
+                })
+            }
+        }
+
+        ticket.status = status;
+        await ticket.save();
+
+
+        return res.status(200).json({
+            message : "Ticket Status successfully Updated",
+            success : true,
+            ticket
+        })
+
+    }catch(err){
+        return res.status(500).json({
+            message : err.message,
+            success : false
+        })
+    }
+}
+
 
 module.exports = {
-        createNewTicket,getTicket,assignTicket
+        createNewTicket,getTicket,assignTicket, modifyStatus
 }
