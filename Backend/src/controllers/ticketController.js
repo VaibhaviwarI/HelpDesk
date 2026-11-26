@@ -1,5 +1,6 @@
 const ticketModel = require("../models/ticketModel")
 const jwt = require("jsonwebtoken");
+const userModel = require("../models/userModel")
 
 async function createNewTicket(req,res){
 
@@ -59,6 +60,84 @@ async function createNewTicket(req,res){
 }
 
 
+async function getTicket(req,res){
+
+    try{
+    let role = req.user.role;
+    let id = req.user._id;
+    let filter = {}; //No conditions yet
+
+    if(role === "CUSTOMER"){
+        filter = {createdBy : id}
+    }
+    else if(role === "AGENT"){
+        filter = {assignedTo : id}
+    }
+   else if(role === "ADMIN"){
+        filter = {}; //no condition, all results
+    }
+
+    const tickets = await ticketModel.find(filter).populate("createdBy", "name email").populate("assignedTo", "name email");
+
+     if (tickets.length === 0) {
+        return res.status(200).json({
+           message: "No tickets found",
+           success: false
+        });
+     }
+
+        return res.status(200).json({
+           success: true,
+        count: tickets.length,
+         tickets
+       })
+
+}catch(err){
+     return res.status(500).json({ message: err.message, success: false });
+}
+
+
+}
+
+async function assignTicket(req, res) {
+    try {
+        const { ticketId } = req.params;
+        const { agentId } = req.body;
+
+        if (!agentId) {
+            return res.status(400).json({ message: "agentId is required", success: false });
+        }
+
+        const agent = await userModel.findOne({ _id: agentId });
+        if (!agent) {
+            return res.status(404).json({ message: "Agent does not exist", success: false });
+        }
+        if (agent.role !== "AGENT") {
+            return res.status(403).json({ message: "User is not an agent", success: false });
+        }
+
+        const updatedTicket = await ticketModel.findByIdAndUpdate(
+            ticketId,
+            { assignedTo: agentId },
+            { new: true }
+        );
+
+        if (!updatedTicket) {
+            return res.status(404).json({ message: "Ticket not found", success: false });
+        }
+
+        return res.status(200).json({
+            message: "Ticket assigned to agent",
+            success: true,
+            ticket: updatedTicket
+        });
+
+    } catch (err) {
+        return res.status(500).json({ message: err.message, success: false });
+    }
+}
+
+
 module.exports = {
-        createNewTicket
+        createNewTicket,getTicket,assignTicket
 }
