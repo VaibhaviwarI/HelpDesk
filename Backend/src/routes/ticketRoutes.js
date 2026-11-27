@@ -10,5 +10,6 @@ router.patch("/:ticketId/assign",authMiddleware.authAdminMiddleware, ticketContr
 router.patch("/:ticketId/status",authMiddleware.authMiddleware,ticketController.modifyStatus);
 router.post("/:ticketId/comments",authMiddleware.authMiddleware,commentController.addComment);
 router.get("/:ticketId/comments",authMiddleware.authMiddleware,commentController.getComment);
+router.patch("/:ticketId",authMiddleware.authMiddleware,ticketController.updateTicketInfo);
 
 module.exports = router;

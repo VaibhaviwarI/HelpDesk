@@ -154,7 +154,8 @@ async function modifyStatus(req,res) {
 
         if(role !== "AGENT" && role !== "ADMIN"){
             return res.status(403).json({
-                message : "Only Admins and Agent can modify the ticket status"
+                message : "Only Admins and Agent can modify the ticket status",
+                success : false
             })
         }
 
@@ -193,7 +194,71 @@ async function modifyStatus(req,res) {
     }
 }
 
+async function updateTicketInfo(req,res){
+
+    try{
+        const {title,description} = req.body;
+        const {ticketId} = req.params;
+        const{id:userId, role} = req.user;
+
+        if(!title && !description){
+            return res.status(400).json({
+                message : "Please provide either title or description",
+                success : false
+            })
+        }
+
+        const ticket = await ticketModel.findById(ticketId)
+
+        if(!ticket){
+            return res.status(404).json({
+                message : "No ticket is associated with this TicketId",
+                success : false
+            })
+        }
+
+        if(role === "AGENT"){
+            return res.status(403).json({
+                message : "Only Customer or Admin can change the info of the ticket",
+                success : false
+            })
+        }
+
+        if(role === "CUSTOMER"){
+            if(!ticket.createdBy || ticket.createdBy.toString() !== userId){
+                return res.status(403).json({
+                    message : "Only ticket owner can change the ticket information",
+                    success : false
+                })
+            }
+        }
+
+        if(title){
+            ticket.title = title;
+        }
+        if(description){
+            ticket.description = description;
+        }
+
+        await ticket.save();
+
+        return res.status(200).json({
+            message : "Ticket Information successfully updated",
+            success : true,
+            ticket: ticket
+        })
+
+    }catch(err){
+        return res.status(500).json({
+            message : err.message,
+            success : false
+        })
+    }
+    
+
+}
+
 
 module.exports = {
-        createNewTicket,getTicket,assignTicket, modifyStatus
+        createNewTicket,getTicket,assignTicket, modifyStatus, updateTicketInfo
 }
