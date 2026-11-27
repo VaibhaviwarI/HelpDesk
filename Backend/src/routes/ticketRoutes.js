@@ -11,5 +11,6 @@ router.patch("/:ticketId/status",authMiddleware.authMiddleware,ticketController.
 router.post("/:ticketId/comments",authMiddleware.authMiddleware,commentController.addComment);
 router.get("/:ticketId/comments",authMiddleware.authMiddleware,commentController.getComment);
 router.patch("/:ticketId",authMiddleware.authMiddleware,ticketController.updateTicketInfo);
+router.delete("/:ticketId",authMiddleware.authMiddleware,ticketController.deleteTicket);
 
 module.exports = router;

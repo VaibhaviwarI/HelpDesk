@@ -1,6 +1,7 @@
 const ticketModel = require("../models/ticketModel")
 const jwt = require("jsonwebtoken");
-const userModel = require("../models/userModel")
+const userModel = require("../models/userModel");
+const commentModel = require("../models/commentModel");
 
 async function createNewTicket(req,res){
 
@@ -258,7 +259,61 @@ async function updateTicketInfo(req,res){
 
 }
 
+async function deleteTicket(req,res){
+
+    try{
+        const {ticketId} = req.params;
+        const {id:userId,role} = req.user;
+        
+        const ticket = await ticketModel.findById(ticketId);
+
+        if(!ticket){
+            return res.status(404).json({
+                message : "Ticket Id is not valid",
+                success : false
+            })
+        }
+
+        if(role === "AGENT"){
+            return res.status(403).json({
+                message : "Agent are not allowed to delete tickets",
+                success : false
+            })
+        }
+
+        if(role === "CUSTOMER"){
+            if(!ticket.createdBy || ticket.createdBy.toString() !== userId){
+                return res.status(403).json({
+                    message : "Forbidden request, only Customer who created the ticket can delete it",
+                    success : false
+                })
+            }
+        }
+
+
+            //First delete all the comment related to that ticket
+         await commentModel.deleteMany({ticketId: ticketId});
+
+          await ticket.deleteOne();
+
+
+          return res.status(200).json({
+            message : "Ticket successfully deleted",
+            success : true
+
+         })
+       
+        
+
+    }catch(err){
+        return res.status(500).json({
+            message : err.message,
+            success : false
+        })
+    }
+}
+
 
 module.exports = {
-        createNewTicket,getTicket,assignTicket, modifyStatus, updateTicketInfo
+        createNewTicket,getTicket,assignTicket, modifyStatus, updateTicketInfo,deleteTicket
 }
