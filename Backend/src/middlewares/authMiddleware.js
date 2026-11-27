@@ -1,6 +1,6 @@
 const userModel = require("../models/userModel")
 const jwt = require('jsonwebtoken')
-
+const blacklistModel = require("../models/blacklistModel")
 
 async function authMiddleware(req,res,next){
 
@@ -9,9 +9,17 @@ async function authMiddleware(req,res,next){
 
     if(!token){
         return res.status(401).json({
-            message : "Unauthorized access! token is missing"
+            message : "Unauthorized access! token is missing or you are logged out"
         })
     }
+
+    const isBlacklisted = await blacklistModel.findOne({token:token});
+         if(isBlacklisted){
+            return res.status(401).json({
+                message : "You are logged out",
+                success : false
+            })
+        }
 
     try{
 
@@ -36,11 +44,23 @@ async function authAdminMiddleware(req,res,next){
 
     const token = req.cookies.token ||  req.headers.authorization?.split(" ")[1];
 
+
+
     if(!token){
         return res.status(401).json({
             message : "Unauthorized access! token is missing"
         })
     }
+    
+
+    const isBlacklisted = await blacklistModel.findOne({token:token});
+         if(isBlacklisted){
+            return res.status(401).json({
+                message : "You are logged out",
+                success : false
+            })
+        }
+
 
     try{
 
@@ -66,7 +86,8 @@ async function authAdminMiddleware(req,res,next){
 
     }catch(err){
          return res.status(401).json({
-            message : "Unauthorized access! token is missing"
+            message : err.message,
+            success : false
         })
     }
 

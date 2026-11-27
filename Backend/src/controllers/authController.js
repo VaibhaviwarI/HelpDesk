@@ -2,6 +2,7 @@ const express = require('express')
 const userModel = require('../models/userModel')
 const jwt = require('jsonwebtoken')
 const bcrypt = require('bcryptjs')
+const blacklistModel = require("../models/blacklistModel")
 
 async function userRegisterController(req,res){
 
@@ -30,6 +31,17 @@ async function userRegisterController(req,res){
 
 
     const token = jwt.sign({ id: user._id, role: user.role , name: user.name},process.env.JWT_SECRET,{expiresIn: '2d'})
+
+    const isBlacklisted = await blacklistModel.findOne(token);
+
+    if(isBlacklisted){
+        return res.status(401).json({
+            message : "You are logged out",
+            success : false
+        })
+    }
+    
+
     res.cookie("token",token);
 
 
@@ -76,6 +88,16 @@ async function userLoginController(req,res){
 
     const token = jwt.sign({id:user._id, name : user.name, role: user.role},process.env.JWT_SECRET,{expiresIn : "2d"})
 
+     const isBlacklisted = await blacklistModel.findOne(token);
+
+    if(isBlacklisted){
+        return res.status(401).json({
+            message : "You are logged out",
+            success : false
+        })
+    }
+    
+
     res.cookie("token",token);
 
     return res.status(200).json({
@@ -86,10 +108,33 @@ async function userLoginController(req,res){
 }
 
 
+async function userLogoutController(req,res){
+
+   const token = req.cookies.token || req.headers.authorization?.split(" ")[ 1 ]
+
+   if(!token){
+    return res.status(200).json({
+        message : "User logged out Successfully",
+        success : true
+    })
+   }
+
+   await blacklistModel.create({
+    token : token
+   })
+
+   res.clearCookie("token")
+
+      res.status(200).json({
+        message: "User logged out successfully"
+    })
+
+}
+
 
 
 module.exports = {
-    userRegisterController, userLoginController
+    userRegisterController, userLoginController, userLogoutController
 }
 
 
