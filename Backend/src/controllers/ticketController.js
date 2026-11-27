@@ -62,12 +62,51 @@ async function createNewTicket(req,res){
 
 
 async function getTicket(req,res){
+    // //old code => without pagination,filtering and search 
+//     try{
+//     let role = req.user.role;
+//     let id = req.user._id;
+//     let filter = {}; //No conditions yet
 
-    try{
+//     if(role === "CUSTOMER"){
+//         filter = {createdBy : id}
+//     }
+//     else if(role === "AGENT"){
+//         filter = {assignedTo : id}
+//     }
+//    else if(role === "ADMIN"){
+//         filter = {}; //no condition, all results
+//     }
+
+//     const tickets = await ticketModel.find(filter).populate("createdBy", "name email").populate("assignedTo", "name email");
+
+//      if (tickets.length === 0) {
+//         return res.status(200).json({
+//            message: "No tickets found",
+//            success: false
+//         });
+//      }
+
+//         return res.status(200).json({
+//            success: true,
+//         count: tickets.length,
+//          tickets
+//        })
+
+// }catch(err){
+//      return res.status(500).json({ message: err.message, success: false });
+// }
+
+
+    //New code => with pagination, filtering and search functionalities
+
+try{
     let role = req.user.role;
-    let id = req.user._id;
+    let id = req.user.id;
     let filter = {}; //No conditions yet
 
+    
+    
     if(role === "CUSTOMER"){
         filter = {createdBy : id}
     }
@@ -78,7 +117,27 @@ async function getTicket(req,res){
         filter = {}; //no condition, all results
     }
 
-    const tickets = await ticketModel.find(filter).populate("createdBy", "name email").populate("assignedTo", "name email");
+    //Pagination =>
+    let page = parseInt(req.query.page) || 1;
+    let limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+    
+    // search
+    let {status, priority, search} = req.query;
+
+    if(status) filter.status = status.toUpperCase();
+    if(priority) filter.priority = priority.toUpperCase();
+
+    if(search){
+        filter.title = {$regex : search, $options : "i"}  //case insensitive
+    }
+
+
+
+    const tickets = await ticketModel.find(filter).populate("createdBy", "name email").populate("assignedTo", "name email").skip(skip).limit(limit);
+
+    const totalTickets = await ticketModel.countDocuments(filter);
+    const totalPages = Math.ceil(totalTickets / limit);
 
      if (tickets.length === 0) {
         return res.status(200).json({
@@ -90,12 +149,17 @@ async function getTicket(req,res){
         return res.status(200).json({
            success: true,
         count: tickets.length,
+        currentPage : page,
+        totalPages : totalPages,
+        totalTickets : totalTickets,
          tickets
        })
 
 }catch(err){
      return res.status(500).json({ message: err.message, success: false });
 }
+
+
 
 
 }
@@ -312,6 +376,8 @@ async function deleteTicket(req,res){
         })
     }
 }
+
+
 
 
 module.exports = {
