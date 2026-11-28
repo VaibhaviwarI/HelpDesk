@@ -2,7 +2,7 @@ const cookieParser = require('cookie-parser');
 const express = require('express')
 const authRoutes  = require('./routes/authRoutes')
 const ticketRoutes = require('./routes/ticketRoutes')
-
+const errorHandler = require("./middlewares/errorHandler")
 
 
 
@@ -20,6 +20,8 @@ app.use("/tickets", ticketRoutes);
 app.get("/",(req,res)=>{
     res.send("Hello World");
 })
+
+app.use(errorHanlder);
 
 
 module.exports = app;

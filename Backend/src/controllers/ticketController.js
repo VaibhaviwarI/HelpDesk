@@ -45,11 +45,7 @@ async function createNewTicket(req,res){
     })
 
       }catch(err){
-          return res.status(500).json({
-        message: "Failed to create ticket",
-        error: err.message,
-        success: false
-     });
+          return next(err);
       }
 
     return res.status(201).json({

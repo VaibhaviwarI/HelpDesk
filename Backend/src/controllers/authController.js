@@ -32,16 +32,7 @@ async function userRegisterController(req,res){
 
     const token = jwt.sign({ id: user._id, role: user.role , name: user.name},process.env.JWT_SECRET,{expiresIn: '2d'})
 
-    const isBlacklisted = await blacklistModel.findOne(token);
-
-    if(isBlacklisted){
-        return res.status(401).json({
-            message : "You are logged out",
-            success : false
-        })
-    }
     
-
     res.cookie("token",token);
 
 
@@ -85,17 +76,14 @@ async function userLoginController(req,res){
 
    }
 
+    
+
 
     const token = jwt.sign({id:user._id, name : user.name, role: user.role},process.env.JWT_SECRET,{expiresIn : "2d"})
 
-     const isBlacklisted = await blacklistModel.findOne(token);
+    
 
-    if(isBlacklisted){
-        return res.status(401).json({
-            message : "You are logged out",
-            success : false
-        })
-    }
+   
     
 
     res.cookie("token",token);
@@ -125,7 +113,7 @@ async function userLogoutController(req,res){
 
    res.clearCookie("token")
 
-      res.status(200).json({
+     return res.status(200).json({
         message: "User logged out successfully"
     })
 
